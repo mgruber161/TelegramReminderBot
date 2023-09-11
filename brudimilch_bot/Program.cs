@@ -96,7 +96,7 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
                 var reminder = new Reminder
                 {
                     Date = new DateTime(convertedDates[0], convertedDates[1], convertedDates[2], convertedTimes[0], convertedTimes[1], convertedTimes[2]),
-                    Name = messageText.Split(' ').Length > 3 ? messageText.Split(' ')[3] : "",
+                    Name = messageText.Split(' ').Length > 3 ? string.Join(' ', messageText.Split(' ').Skip(3)) : "",
                     ChatId = chatId,
                     ReminderSent = false,
                 };
