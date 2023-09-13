@@ -79,49 +79,59 @@ async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, Cancel
 
     if (messageText.StartsWith("/createreminder", StringComparison.InvariantCultureIgnoreCase))
     {
-        var onlyNumbers = true;
-
-        var datePart = messageText.Split(' ')[1].Split('.');
-        var timePart = messageText.Split(' ')[2].Split(':');
-
-        datePart.ToList().ForEach(x => { if (!regex.IsMatch(x)) onlyNumbers = false; });
-        timePart.ToList().ForEach(x => { if (!regex.IsMatch(x)) onlyNumbers = false; });
-
-        if (onlyNumbers)
+        if (messageText.Replace(" ", string.Empty).Equals("/createreminder"))
         {
-            try
-            {
-                var convertedDates = datePart.Select(x => int.Parse(x)).ToArray();
-                var convertedTimes = timePart.Select(x => int.Parse(x)).ToArray();
-                var reminder = new Reminder
-                {
-                    Date = new DateTime(convertedDates[0], convertedDates[1], convertedDates[2], convertedTimes[0], convertedTimes[1], convertedTimes[2]),
-                    Name = messageText.Split(' ').Length > 3 ? string.Join(' ', messageText.Split(' ').Skip(3)) : "",
-                    ChatId = chatId,
-                    ReminderSent = false,
-                };
-                await db.Database.EnsureCreatedAsync();
-                await db.AddAsync(reminder);
-                await db.SaveChangesAsync();
-                Message sentMessage = await botClient.SendTextMessageAsync(
+            Message sentMessage = await botClient.SendTextMessageAsync(
                     chatId: chatId,
-                    text: $"Reminder created successfully for {reminder.Date}!",
+                    text: "Please send the command in the following format: /createreminder YYYY.MM.DD HH:mm:SS ReminderName",
                     cancellationToken: cancellationToken);
+        }
+        else
+        {
+            var onlyNumbers = true;
+
+            var datePart = messageText.Split(' ')[1].Split('.');
+            var timePart = messageText.Split(' ')[2].Split(':');
+
+            datePart.ToList().ForEach(x => { if (!regex.IsMatch(x)) onlyNumbers = false; });
+            timePart.ToList().ForEach(x => { if (!regex.IsMatch(x)) onlyNumbers = false; });
+
+            if (onlyNumbers)
+            {
+                try
+                {
+                    var convertedDates = datePart.Select(x => int.Parse(x)).ToArray();
+                    var convertedTimes = timePart.Select(x => int.Parse(x)).ToArray();
+                    var reminder = new Reminder
+                    {
+                        Date = new DateTime(convertedDates[0], convertedDates[1], convertedDates[2], convertedTimes[0], convertedTimes[1], convertedTimes[2]),
+                        Name = messageText.Split(' ').Length > 3 ? string.Join(' ', messageText.Split(' ').Skip(3)) : "",
+                        ChatId = chatId,
+                        ReminderSent = false,
+                    };
+                    await db.Database.EnsureCreatedAsync();
+                    await db.AddAsync(reminder);
+                    await db.SaveChangesAsync();
+                    Message sentMessage = await botClient.SendTextMessageAsync(
+                        chatId: chatId,
+                        text: $"Reminder created successfully for {reminder.Date}!",
+                        cancellationToken: cancellationToken);
+                }
+                catch
+                {
+                    Message sentMessage = await botClient.SendTextMessageAsync(
+                        chatId: chatId,
+                        text: "You said:\n" + messageText + "\nCould not parse date. Please send Date in the following format: YYYY.MM.DD HH:mm:SS",
+                        cancellationToken: cancellationToken);
+                }
             }
-            catch
+            else
             {
                 Message sentMessage = await botClient.SendTextMessageAsync(
                     chatId: chatId,
                     text: "You said:\n" + messageText + "\nCould not parse date. Please send Date in the following format: YYYY.MM.DD HH:mm:SS",
                     cancellationToken: cancellationToken);
             }
-        }
-        else
-        {
-            Message sentMessage = await botClient.SendTextMessageAsync(
-                chatId: chatId,
-                text: "You said:\n" + messageText + "\nCould not parse date. Please send Date in the following format: YYYY.MM.DD HH:mm:SS",
-                cancellationToken: cancellationToken);
         }
     }
 }
